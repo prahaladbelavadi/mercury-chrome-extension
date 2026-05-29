@@ -1,5 +1,5 @@
 import { handleAuth, getSession, redirectToLogin } from './auth.js';
-import { listFiles, getStats, proxyContent }       from './files.js';
+import { listFiles, getStats, proxyContent, proxyThumbnail } from './files.js';
 import { renderDashboard }                          from './dashboard.js';
 
 const CORS = {
@@ -52,6 +52,13 @@ export default {
       return json(await getStats(env));
     }
 
+    if (url.pathname.startsWith('/api/files/') && url.pathname.endsWith('/thumbnail')) {
+      if (env.GITHUB_CLIENT_ID && !session) return json({ error: 'Unauthorized' }, 401);
+      const jobId = url.pathname.split('/')[3];
+      const res   = await proxyThumbnail(jobId, env);
+      return res || new Response(null, { status: 404 });
+    }
+
     if (url.pathname.startsWith('/api/files/') && url.pathname.endsWith('/content')) {
       if (env.GITHUB_CLIENT_ID && !session) return json({ error: 'Unauthorized' }, 401);
       const jobId = url.pathname.split('/')[3];
@@ -72,22 +79,34 @@ async function handleUpload(request, env, ctx) {
   const file     = form.get('file');
   if (!file) return json({ success: false, error: 'No file provided' }, 400);
 
-  const source   = form.get('source')   || 'file';
-  const filename = form.get('filename') || file.name || 'upload';
-  const tabUrl   = form.get('tabUrl')   || null;
-  const jobId    = crypto.randomUUID();
-  const key      = `uploads/${jobId}/${filename}`;
+  const source    = form.get('source')    || 'file';
+  const filename  = form.get('filename')  || file.name || 'upload';
+  const tabUrl    = form.get('tabUrl')    || null;
+  const tabTitle  = form.get('tabTitle')  || null;
+  const thumbnail = form.get('thumbnail') || null;
+  const jobId     = crypto.randomUUID();
+  const key       = `uploads/${jobId}/${filename}`;
 
   try {
     await env.MERCURY_BUCKET.put(key, file.stream(), {
       httpMetadata:   { contentType: file.type || 'application/octet-stream' },
       customMetadata: {
         jobId, source, filename,
-        ...(tabUrl && { tabUrl }),
+        ...(tabUrl   && { tabUrl }),
+        ...(tabTitle && { tabTitle }),
+        hasThumbnail: thumbnail ? 'true' : 'false',
         uploadedAt: new Date().toISOString(),
         status: 'uploaded',
       },
     });
+
+    // Store screenshot thumbnail if provided
+    if (thumbnail) {
+      await env.MERCURY_BUCKET.put(`uploads/${jobId}/thumbnail.jpg`, thumbnail.stream(), {
+        httpMetadata:   { contentType: 'image/jpeg' },
+        customMetadata: { jobId, type: 'thumbnail' },
+      });
+    }
   } catch (err) {
     console.error('R2 put failed:', err);
     return json({ success: false, error: 'Storage error' }, 500);

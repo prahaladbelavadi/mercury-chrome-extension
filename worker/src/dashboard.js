@@ -131,14 +131,7 @@ select.filter-select{
   position:relative;width:100%;aspect-ratio:16/10;
   background:var(--bg3);overflow:hidden;flex-shrink:0;
 }
-.card-thumb iframe{
-  position:absolute;top:0;left:0;
-  width:1280px;height:800px;
-  border:none;pointer-events:none;
-  transform:scale(.172);transform-origin:top left;
-  /* actual displayed h = 800*.172 = 137.6 matches 16/10 at ~220px wide */
-}
-.card-thumb img{width:100%;height:100%;object-fit:cover}
+.card-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .card-thumb .thumb-icon{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   height:100%;gap:6px;color:var(--text-faint);
@@ -438,27 +431,34 @@ function renderStats(stats) {
 // ── Thumbnail ──────────────────────────────────────────────
 function thumbFor(file) {
   const ct = file.contentType || '';
-  if (ct.startsWith('text/html')) {
+
+  // Tab captures always have a real screenshot; image files serve themselves
+  if (file.hasThumbnail || ct.startsWith('image/')) {
+    const src = file.hasThumbnail
+      ? \`/api/files/\${file.jobId}/thumbnail\`
+      : \`/api/files/\${file.jobId}/content\`;
     return \`
-      <iframe
-        data-src="/api/files/\${file.jobId}/content"
-        sandbox="allow-same-origin allow-scripts"
-        title="\${file.filename}"
-      ></iframe>
+      <img data-src="\${src}" alt="\${esc(file.tabTitle || file.filename)}"
+           onerror="this.parentElement.innerHTML=iconThumb('${ct}')">
       <div class="thumb-loading"><div class="spinner"></div></div>\`;
   }
-  if (ct.startsWith('image/')) {
-    return \`<img data-src="/api/files/\${file.jobId}/content" alt="\${file.filename}" loading="lazy">\`;
-  }
-  const icons = {
-    'application/pdf': ['📄','PDF'],
-    default: ['📁','File'],
-  };
-  const [icon, label] = icons[ct] || icons.default;
-  return \`<div class="thumb-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-    </svg><span>\${label}</span></div>\`;
+
+  // PDF / other: icon
+  return iconThumb(ct);
 }
+
+function iconThumb(ct) {
+  const label = ct === 'application/pdf' ? 'PDF' : ct.startsWith('text/') ? 'TXT' : 'FILE';
+  return \`<div class="thumb-icon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    <span>\${label}</span>
+  </div>\`;
+}
+
+function esc(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ── Status overlay ─────────────────────────────────────────
 function statusOverlay(status) {
@@ -500,28 +500,20 @@ const thumbObserver = new IntersectionObserver((entries) => {
   for (const entry of entries) {
     if (!entry.isIntersecting) continue;
     const card = entry.target;
-
-    // iframe
-    const iframe = card.querySelector('iframe[data-src]');
-    if (iframe) {
-      iframe.src = iframe.dataset.src;
-      delete iframe.dataset.src;
-      iframe.addEventListener('load', () => {
-        const loader = card.querySelector('.thumb-loading');
-        if (loader) loader.remove();
-      }, { once: true });
-    }
-
-    // img
-    const img = card.querySelector('img[data-src]');
+    const img  = card.querySelector('img[data-src]');
     if (img) {
       img.src = img.dataset.src;
       delete img.dataset.src;
+      img.addEventListener('load', () => {
+        card.querySelector('.thumb-loading')?.remove();
+      }, { once: true });
+      img.addEventListener('error', () => {
+        card.querySelector('.thumb-loading')?.remove();
+      }, { once: true });
     }
-
     thumbObserver.unobserve(card);
   }
-}, { rootMargin: '150px' });
+}, { rootMargin: '200px' });
 
 // ── Render grid ────────────────────────────────────────────
 function renderGrid(files) {
@@ -682,6 +674,8 @@ async function boot() {
     renderStats(stats);
     renderGrid(files);
     renderActivity(files);
+    // Only start polling if there's something still processing
+    if (hasPending()) startPolling();
   } catch (err) {
     console.error('Boot failed:', err);
     document.getElementById('filesGrid').innerHTML =
@@ -691,8 +685,15 @@ async function boot() {
 
 boot();
 
-// ── Poll for updates every 30s ─────────────────────────────
-setInterval(async () => {
+// ── Smart poller — only runs while the tab is visible
+//    and there are pending files; stops itself when done ────
+let pollTimer = null;
+
+function hasPending() {
+  return allFiles.some(f => f.status === 'uploaded' || f.status === 'processing');
+}
+
+async function pollOnce() {
   try {
     const files = await fetch('/api/files').then(r => r.json());
     if (Array.isArray(files)) {
@@ -701,7 +702,26 @@ setInterval(async () => {
       renderActivity(files);
     }
   } catch {}
-}, 30_000);
+}
+
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    if (!hasPending()) { stopPolling(); return; }
+    pollOnce();
+  }, 15_000);
+}
+
+function stopPolling() {
+  clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+// Resume polling when tab becomes visible and there's still work
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && hasPending()) startPolling();
+});
 </script>
 </body>
 </html>`;

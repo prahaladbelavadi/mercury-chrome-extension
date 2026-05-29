@@ -96,7 +96,7 @@ async function captureAndUpload() {
       return;
     }
 
-    // response.html = page HTML, response.url = tab URL
+    // response.html = page HTML, response.url = tab URL, response.screenshot = data URL
     const blob = new Blob([response.html], { type: 'text/html' });
     const filename = `${new URL(response.url).hostname}-capture.html`;
     const file = new File([blob], filename, { type: 'text/html' });
@@ -106,6 +106,13 @@ async function captureAndUpload() {
     form.append('source', 'tab');
     form.append('filename', filename);
     form.append('tabUrl', response.url);
+    form.append('tabTitle', response.title || '');
+
+    // Attach screenshot if capture succeeded
+    if (response.screenshot) {
+      const thumbBlob = dataURLToBlob(response.screenshot);
+      form.append('thumbnail', thumbBlob, 'thumbnail.jpg');
+    }
 
     await sendToWorker(form);
   } catch (err) {
@@ -161,6 +168,14 @@ function showUploadState(state, message) {
     statusMsg.textContent = message;
     statusMsg.style.color = 'var(--error)';
   }
+}
+
+// ─── Helpers ─────────────────────────────────────────────
+function dataURLToBlob(dataURL) {
+  const [header, base64] = dataURL.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+  return new Blob([bytes], { type: mime });
 }
 
 // ─── Init ─────────────────────────────────────────────────

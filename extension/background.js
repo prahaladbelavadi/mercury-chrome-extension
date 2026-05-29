@@ -20,6 +20,17 @@ async function captureActiveTab() {
     throw new Error("Can't capture this page — navigate to a regular website first");
   }
 
+  // Capture a visible screenshot first (best-effort — never blocks the upload)
+  let screenshot = null;
+  try {
+    screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, {
+      format: 'jpeg',
+      quality: 70,
+    });
+  } catch (e) {
+    console.warn('[mercury] screenshot failed:', e.message);
+  }
+
   // Inject content script to grab the page HTML
   const results = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
@@ -29,5 +40,5 @@ async function captureActiveTab() {
   const html = results?.[0]?.result;
   if (!html) throw new Error('Could not read page content');
 
-  return { html, url: tab.url, title: tab.title };
+  return { html, url: tab.url, title: tab.title, screenshot };
 }
