@@ -1,5 +1,5 @@
 // Worker URL — update after deploying the Cloudflare Worker
-const WORKER_URL = 'https://mercury-worker.YOUR_SUBDOMAIN.workers.dev';
+const WORKER_URL = 'https://mercury-worker.belavadi.workers.dev';
 
 // ─── DOM refs ────────────────────────────────────────────
 const workerStatus  = document.getElementById('workerStatus');
