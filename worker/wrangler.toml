@@ -2,6 +2,11 @@ name = "mercury-worker"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
 
+# Static version — mirrors package.json.
+# GIT_COMMIT and GIT_DATE are injected at deploy time by deploy.sh
+[vars]
+APP_VERSION = "1.0.0"
+
 # R2 bucket for uploaded documents
 [[r2_buckets]]
 binding = "MERCURY_BUCKET"

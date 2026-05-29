@@ -34,7 +34,12 @@ export default {
     if (url.pathname === '/dashboard') {
       // If GitHub creds not configured, render dashboard without auth
       if (env.GITHUB_CLIENT_ID && !session) return redirectToLogin(url.origin);
-      return new Response(renderDashboard(session), {
+      const build = {
+        version:  env.APP_VERSION  || '—',
+        commit:   env.GIT_COMMIT   || '—',
+        date:     env.GIT_DATE     || null,
+      };
+      return new Response(renderDashboard(session, build), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
     }

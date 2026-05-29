@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "bash deploy.sh",
     "tail": "wrangler tail"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
-export function renderDashboard(user) {
-  const userJson = JSON.stringify(user || null);
+export function renderDashboard(user, build = {}) {
+  const userJson  = JSON.stringify(user  || null);
+  const buildJson = JSON.stringify(build || {});
   return /* html */`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -269,6 +270,18 @@ select.filter-select{
 }
 .login-box h2{font-size:18px;font-weight:700}
 .login-box p{font-size:13px;color:var(--text-dim)}
+.version-badge{
+  display:flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:20px;
+  background:var(--bg3);border:1px solid var(--border);
+  font-size:11px;color:var(--text-dim);font-family:'SF Mono','Fira Code',monospace;
+  text-decoration:none;transition:border-color .15s,color .15s;
+}
+.version-badge:hover{border-color:var(--accent);color:var(--text)}
+.version-badge .ver-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--success);
+  box-shadow:0 0 5px var(--success);flex-shrink:0;
+}
 .btn-github{
   display:flex;align-items:center;justify-content:center;gap:8px;
   padding:10px 20px;border-radius:var(--r-sm);
@@ -296,6 +309,7 @@ select.filter-select{
     Mercury
   </div>
   <div class="header-spacer"></div>
+  <div id="versionBadge"></div>
   <div id="headerUser"></div>
 </header>
 
@@ -377,7 +391,8 @@ select.filter-select{
 </div>
 
 <script>
-const USER = ${userJson};
+const USER  = ${userJson};
+const BUILD = ${buildJson};
 let allFiles = [];
 
 // ── Relative time ──────────────────────────────────────────
@@ -647,9 +662,27 @@ document.getElementById('searchInput').addEventListener('input', applyFilters);
 document.getElementById('filterType').addEventListener('change', applyFilters);
 document.getElementById('sortOrder').addEventListener('change', applyFilters);
 
+// ── Version badge ──────────────────────────────────────────
+function renderVersionBadge() {
+  const el = document.getElementById('versionBadge');
+  if (!el) return;
+  const commit  = BUILD.commit || '—';
+  const version = BUILD.version || '—';
+  const title   = BUILD.date ? \`Deployed \${new Date(BUILD.date).toLocaleString()}\` : commit;
+  const href    = commit !== '—'
+    ? \`https://github.com/prahaladbelavadi/mercury-chrome-extension/commit/\${commit}\`
+    : 'https://github.com/prahaladbelavadi/mercury-chrome-extension';
+  el.innerHTML = \`
+    <a class="version-badge" href="\${href}" target="_blank" rel="noopener" title="\${title}">
+      <span class="ver-dot"></span>
+      v\${version}&nbsp;·&nbsp;\${commit}
+    </a>\`;
+}
+
 // ── Boot ───────────────────────────────────────────────────
 async function boot() {
   renderHeader();
+  renderVersionBadge();
 
   try {
     const [filesRes, statsRes] = await Promise.all([
