@@ -432,31 +432,31 @@ function renderStats(stats) {
 function thumbFor(file) {
   const ct = file.contentType || '';
 
-  // Tab captures always have a real screenshot; image files serve themselves
+  // Tab captures have a real screenshot; image files serve themselves
   if (file.hasThumbnail || ct.startsWith('image/')) {
     const src = file.hasThumbnail
       ? \`/api/files/\${file.jobId}/thumbnail\`
       : \`/api/files/\${file.jobId}/content\`;
+    // Fallback icon is in the DOM from the start (hidden). onerror reveals it — no JS eval needed.
     return \`
       <img data-src="\${src}" alt="\${esc(file.tabTitle || file.filename)}"
-           onerror="this.parentElement.innerHTML=iconThumb('${ct}')">
+           style="width:100%;height:100%;object-fit:cover;display:block"
+           onerror="this.style.display='none';this.nextElementSibling.removeAttribute('hidden')">
+      <div class="thumb-icon" hidden>\${fileIcon()}</div>
       <div class="thumb-loading"><div class="spinner"></div></div>\`;
   }
 
-  // PDF / other: icon
-  return iconThumb(ct);
+  // PDF / other: icon only
+  return \`<div class="thumb-icon">\${fileIcon()}</div>\`;
 }
 
-function iconThumb(ct) {
-  const label = ct === 'application/pdf' ? 'PDF' : ct.startsWith('text/') ? 'TXT' : 'FILE';
-  return \`<div class="thumb-icon">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-    <span>\${label}</span>
-  </div>\`;
+function fileIcon() {
+  return \`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+  </svg>\`;
 }
+
 
 function esc(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
