@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mercury</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="9" stroke="#6366f1" stroke-width="2"/>
+        <circle cx="10" cy="10" r="4" fill="#6366f1"/>
+        <line x1="10" y1="1" x2="10" y2="4" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="10" y1="16" x2="10" y2="19" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="14.5" y1="3" x2="13" y2="5.6" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="title">Mercury</span>
+    <div class="worker-status" id="workerStatus" title="Worker connection status">
+      <span class="status-dot"></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Button 1: Alert -->
+    <section class="action-card" id="alertCard">
+      <button class="action-btn alert-btn" id="alertBtn">
+        <div class="btn-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="btn-label">
+          <span class="btn-title">Ping</span>
+          <span class="btn-sub">Test alert action</span>
+        </div>
+      </button>
+    </section>
+
+    <!-- Button 2: Upload with drag-and-drop -->
+    <section class="action-card" id="uploadCard">
+      <div
+        class="drop-zone"
+        id="dropZone"
+        role="button"
+        tabindex="0"
+        aria-label="Drop files here or click to upload"
+      >
+        <div class="drop-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polyline points="17 8 12 3 7 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="drop-label">Drop a file here</p>
+        <p class="drop-sub">or</p>
+        <div class="drop-actions">
+          <button class="secondary-btn" id="pickFileBtn">Browse file</button>
+          <button class="secondary-btn" id="captureTabBtn">Capture tab</button>
+        </div>
+        <input type="file" id="fileInput" style="display:none" />
+      </div>
+
+      <div class="upload-status" id="uploadStatus" hidden>
+        <div class="status-row">
+          <span class="status-icon" id="statusIcon"></span>
+          <span class="status-msg" id="statusMsg"></span>
+        </div>
+        <div class="job-id" id="jobId" hidden></div>
+        <button class="ghost-btn" id="resetBtn">Upload another</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

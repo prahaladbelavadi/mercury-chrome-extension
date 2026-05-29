@@ -1,0 +1,13 @@
+name = "mercury-worker"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# R2 bucket for uploaded documents
+[[r2_buckets]]
+binding = "MERCURY_BUCKET"
+bucket_name = "mercury-uploads"
+
+# Optional: add a KV namespace for richer job-status tracking
+# [[kv_namespaces]]
+# binding = "MERCURY_KV"
+# id = "YOUR_KV_NAMESPACE_ID"
