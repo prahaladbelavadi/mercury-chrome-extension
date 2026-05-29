@@ -14,6 +14,12 @@ async function captureActiveTab() {
 
   if (!tab?.id) throw new Error('No active tab');
 
+  // Chrome blocks script injection into privileged pages
+  const blocked = /^(chrome|chrome-extension|devtools|about|data):/i;
+  if (!tab.url || blocked.test(tab.url)) {
+    throw new Error("Can't capture this page — navigate to a regular website first");
+  }
+
   // Inject content script to grab the page HTML
   const results = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
