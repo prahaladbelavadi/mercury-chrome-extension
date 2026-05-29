@@ -7,7 +7,6 @@ compatibility_date = "2025-01-01"
 binding = "MERCURY_BUCKET"
 bucket_name = "mercury-uploads"
 
-# Optional: add a KV namespace for richer job-status tracking
-# [[kv_namespaces]]
-# binding = "MERCURY_KV"
-# id = "YOUR_KV_NAMESPACE_ID"
+[[kv_namespaces]]
+binding = "MERCURY_KV"
+id = "9438879295a04137bc4c041dded239e5"
